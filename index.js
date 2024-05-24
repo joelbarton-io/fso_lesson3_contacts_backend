@@ -21,16 +21,10 @@ const errorHandler = (error, request, response, next) => {
   next(error);
 };
 
-// this has to be the last loaded middleware, also all the routes should be registered before this!
 app.use(errorHandler);
 
-app.get("/api/persons", async (request, response, next) => {
-  try {
-    const persons = await Person.find({});
-    response.json(persons);
-  } catch (e) {
-    next(e);
-  }
+app.get("/", async (request, response, next) => {
+  response.send("<p>Hello world</p>");
 });
 
 app.get("/info", async (request, response, next) => {
@@ -39,7 +33,19 @@ app.get("/info", async (request, response, next) => {
     const msg = `<p>Phonebook has info for ${
       persons.length
     } people</p><p>${new Date()}</p>`;
-    response.send(msg);
+    console.log(msg);
+    console.log('/INFO');
+    response.send(msg).end();
+  } catch (e) {
+    console.log("something broke");
+    next(e);
+  }
+});
+
+app.get("/api/persons", async (request, response, next) => {
+  try {
+    const persons = await Person.find({});
+    response.json(persons);
   } catch (e) {
     next(e);
   }
@@ -107,8 +113,11 @@ app.post("/api/persons", async (request, response, next) => {
 
 app.put("/api/persons/:id", async (request, response, next) => {
   try {
-    const updatedContact = await Person.findByIdAndUpdate(request.params.id, request.body);
-    response.json(updatedContact)
+    const updatedContact = await Person.findByIdAndUpdate(
+      request.params.id,
+      request.body
+    );
+    response.json(updatedContact);
   } catch (e) {
     next(e);
   }
