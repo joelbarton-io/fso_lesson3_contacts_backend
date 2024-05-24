@@ -5,22 +5,35 @@ const morgan = require("morgan");
 const Person = require("./models/person");
 const app = express();
 
-// app.use(express.static("dist"));
-app.use(cors());
+app.use(express.static("dist"));
 app.use(express.json());
+app.use(cors());
 morgan.token("body", (req, res) => JSON.stringify(req.body));
 app.use(morgan("MORGAN :method :url :status :response-time :body"));
 
-app.get("/api/persons", async (request, response) => {
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message);
+
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
+  }
+
+  next(error);
+};
+
+// this has to be the last loaded middleware, also all the routes should be registered before this!
+app.use(errorHandler);
+
+app.get("/api/persons", async (request, response, next) => {
   try {
     const persons = await Person.find({});
     response.json(persons);
-  } catch (error) {
-    console.log("CAUGHT HERE 🍆", error);
+  } catch (e) {
+    next(e);
   }
 });
 
-app.get("/info", async (request, response) => {
+app.get("/info", async (request, response, next) => {
   try {
     const persons = await Person.find({});
     const msg = `<p>Phonebook has info for ${
@@ -28,49 +41,37 @@ app.get("/info", async (request, response) => {
     } people</p><p>${new Date()}</p>`;
     response.send(msg);
   } catch (e) {
-    console.error(e);
-    response.status(500).send("An error occurred while fetching the info");
+    next(e);
   }
 });
 
-app.get("/api/persons/:id", async (request, response) => {
+app.get("/api/persons/:id", async (request, response, next) => {
   const id = request.params.id;
-
   try {
     const person = await Person.findById(id);
     if (person) {
-      response.json(person);
-      return;
+      return response.json(person);
     }
-    // response.statusMessage = "Contact was not found";
-    response.status(400).end();
+    response.status(404).end();
   } catch (e) {
-    console.error(
-      `something went awry while attempting to fetch contact information for id: ${id}\n\nREASON: ${e.reason}`
-    );
-    response.status(500).end();
+    next(e);
   }
 });
 
-app.delete("/api/persons/:id", async (request, response) => {
+app.delete("/api/persons/:id", async (request, response, next) => {
   const id = request.params.id;
-  console.log("made it to backend");
   try {
     const deleted = await Person.findByIdAndDelete(id);
     if (deleted) {
-      response.status(204).json(deleted);
-      return;
+      return response.status(204).json(deleted);
     }
-    // response.statusMessage = "Contact was not found and therefore not deleted";
     response.status(400).end();
-  } catch (err) {
-    console.error(
-      `Failed to delete contact with id ${id}\n\nREASON: ${err.reason}`
-    );
-    response.status(500).end();
+  } catch (e) {
+    next(e);
   }
 });
-app.post("/api/persons", async (request, response) => {
+
+app.post("/api/persons", async (request, response, next) => {
   const candidate = request.body;
 
   try {
@@ -99,15 +100,9 @@ app.post("/api/persons", async (request, response) => {
 
     const validatedCandidate = new Person(candidate);
     const person = await validatedCandidate.save();
-    console.log(
-      "successfully saved a new contact in the atlas cluster people collection"
-    );
     return response.json(person);
-  } catch (error) {
-    console.error("Error saving the person:", error);
-    return response
-      .status(500)
-      .json({ error: "An error occurred while saving the contact" });
+  } catch (e) {
+    next(e);
   }
 });
 
