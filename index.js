@@ -85,22 +85,30 @@ app.post("/api/persons", async (request, response, next) => {
       );
     };
 
-    const hasUniqueName = async (name) => {
-      const matchedPeople = await Person.find({ name: name });
-      return matchedPeople.length === 0;
-    };
-
     if (!isValidInput(candidate)) {
       return response.status(400).json({ error: "Invalid input" });
     }
 
-    if (!(await hasUniqueName(candidate.name))) {
-      return response.status(409).json({ error: "Name must be unique" });
-    }
+    // const hasUniqueName = async (name) => {
+    //   const matchedPeople = await Person.find({ name: name });
+    //   return matchedPeople.length === 0;
+    // };
+    // if (!(await hasUniqueName(candidate.name))) {
+    //   return response.status(409).json({ error: "Name must be unique" });
+    // }
 
     const validatedCandidate = new Person(candidate);
     const person = await validatedCandidate.save();
     return response.json(person);
+  } catch (e) {
+    next(e);
+  }
+});
+
+app.put("/api/persons/:id", async (request, response, next) => {
+  try {
+    const updatedContact = await Person.findByIdAndUpdate(request.params.id, request.body);
+    response.json(updatedContact)
   } catch (e) {
     next(e);
   }
