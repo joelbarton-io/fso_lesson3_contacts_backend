@@ -11,18 +11,6 @@ app.use(cors());
 morgan.token("body", (req, res) => JSON.stringify(req.body));
 app.use(morgan("MORGAN :method :url :status :response-time :body"));
 
-const errorHandler = (error, request, response, next) => {
-  console.error(error.message);
-
-  if (error.name === "CastError") {
-    return response.status(400).send({ error: "malformatted id" });
-  }
-
-  next(error);
-};
-
-app.use(errorHandler);
-
 app.get("/", async (request, response, next) => {
   response.send("<p>Hello world</p>");
 });
@@ -34,7 +22,7 @@ app.get("/info", async (request, response, next) => {
       persons.length
     } people</p><p>${new Date()}</p>`;
     console.log(msg);
-    console.log('/INFO');
+    console.log("/INFO");
     response.send(msg).end();
   } catch (e) {
     console.log("something broke");
@@ -78,32 +66,9 @@ app.delete("/api/persons/:id", async (request, response, next) => {
 });
 
 app.post("/api/persons", async (request, response, next) => {
-  const candidate = request.body;
-
   try {
-    const isValidInput = (person) => {
-      return Boolean(
-        person &&
-          "name" in person &&
-          "number" in person &&
-          person.name.length &&
-          person.number.length
-      );
-    };
-
-    if (!isValidInput(candidate)) {
-      return response.status(400).json({ error: "Invalid input" });
-    }
-
-    // const hasUniqueName = async (name) => {
-    //   const matchedPeople = await Person.find({ name: name });
-    //   return matchedPeople.length === 0;
-    // };
-    // if (!(await hasUniqueName(candidate.name))) {
-    //   return response.status(409).json({ error: "Name must be unique" });
-    // }
-
-    const validatedCandidate = new Person(candidate);
+    const { name, number } = request.body;
+    const validatedCandidate = new Person({ name, number });
     const person = await validatedCandidate.save();
     return response.json(person);
   } catch (e) {
@@ -113,15 +78,35 @@ app.post("/api/persons", async (request, response, next) => {
 
 app.put("/api/persons/:id", async (request, response, next) => {
   try {
+    const { name, number } = request.body;
     const updatedContact = await Person.findByIdAndUpdate(
       request.params.id,
-      request.body
+      { name, number },
+      {
+        new: true,
+        runValidators: true,
+        context: "query",
+      }
     );
     response.json(updatedContact);
   } catch (e) {
     next(e);
   }
 });
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message);
+
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
+  } else if (error.name === "ValidationError") {
+    return response.status(409).json({ error: error.message });
+  }
+
+  next(error);
+};
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
