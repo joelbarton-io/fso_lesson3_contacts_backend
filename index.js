@@ -1,119 +1,121 @@
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const morgan = require("morgan");
-const Person = require("./models/person");
-const app = express();
+require('dotenv').config()
+const express = require('express')
+const cors = require('cors')
+const morgan = require('morgan')
+const Person = require('./models/person')
+const app = express()
 
-app.use(express.static("dist"));
-app.use(express.json());
-app.use(cors());
-morgan.token("body", (req, res) => JSON.stringify(req.body));
-app.use(morgan("MORGAN :method :url :status :response-time :body"));
+app.use(express.static('dist'))
+app.use(express.json())
+app.use(cors())
+// eslint-disable-next-line no-unused-vars
+morgan.token('body', (req, res) => JSON.stringify(req.body))
+app.use(morgan('MORGAN :method :url :status :response-time :body'))
 
-app.get("/", async (request, response, next) => {
-  response.send("<p>Hello world</p>");
-});
+// eslint-disable-next-line no-unused-vars
+app.get('/', async (request, response, next) => {
+  response.send('<p>Hello world</p>')
+})
 
-app.get("/info", async (request, response, next) => {
+app.get('/info', async (request, response, next) => {
   try {
-    const persons = await Person.find({});
+    const persons = await Person.find({})
     const msg = `<p>Phonebook has info for ${
       persons.length
-    } people</p><p>${new Date()}</p>`;
-    console.log(msg);
-    console.log("/INFO");
-    response.send(msg).end();
+    } people</p><p>${new Date()}</p>`
+    console.log(msg)
+    console.log('/INFO')
+    response.send(msg).end()
   } catch (e) {
-    console.log("something broke");
-    next(e);
+    console.log('something broke')
+    next(e)
   }
-});
+})
 
-app.get("/api/persons", async (request, response, next) => {
+app.get('/api/persons', async (request, response, next) => {
   try {
-    const persons = await Person.find({});
-    response.json(persons);
+    const persons = await Person.find({})
+    response.json(persons)
   } catch (e) {
-    next(e);
+    next(e)
   }
-});
+})
 
-app.get("/api/persons/:id", async (request, response, next) => {
-  const id = request.params.id;
+app.get('/api/persons/:id', async (request, response, next) => {
+  const id = request.params.id
   try {
-    const person = await Person.findById(id);
+    const person = await Person.findById(id)
     if (person) {
-      return response.json(person);
+      return response.json(person)
     }
-    response.status(404).end();
+    response.status(404).end()
   } catch (e) {
-    next(e);
+    next(e)
   }
-});
+})
 
-app.delete("/api/persons/:id", async (request, response, next) => {
-  const id = request.params.id;
+app.delete('/api/persons/:id', async (request, response, next) => {
+  const id = request.params.id
   try {
-    const deleted = await Person.findByIdAndDelete(id);
+    const deleted = await Person.findByIdAndDelete(id)
     if (deleted) {
-      return response.status(204).json(deleted);
+      return response.status(204).json(deleted)
     }
-    response.status(400).end();
+    response.status(400).end()
   } catch (e) {
-    next(e);
+    next(e)
   }
-});
+})
 
-app.post("/api/persons", async (request, response, next) => {
+app.post('/api/persons', async (request, response, next) => {
   try {
-    const { name, number } = request.body;
-    const validatedCandidate = new Person({ name, number });
-    const person = await validatedCandidate.save();
-    return response.json(person);
+    const { name, number } = request.body
+    const validatedCandidate = new Person({ name, number })
+    const person = await validatedCandidate.save()
+    return response.json(person)
   } catch (e) {
-    next(e);
+    next(e)
   }
-});
+})
 
-app.put("/api/persons/:id", async (request, response, next) => {
+app.put('/api/persons/:id', async (request, response, next) => {
   try {
-    const { name, number } = request.body;
+    const { name, number } = request.body
     const updatedContact = await Person.findByIdAndUpdate(
       request.params.id,
       { name, number },
       {
         new: true,
         runValidators: true,
-        context: "query",
+        context: 'query',
       }
-    );
-    response.json(updatedContact);
+    )
+    response.json(updatedContact)
   } catch (e) {
-    next(e);
+    next(e)
   }
-});
+})
 
 const errorHandler = (error, request, response, next) => {
-  console.error(error.message);
+  console.error(error.message)
 
-  if (error.name === "CastError") {
-    return response.status(400).send({ error: "malformatted id" });
-  } else if (error.name === "ValidationError") {
-    return response.status(409).json({ error: error.message });
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  } else if (error.name === 'ValidationError') {
+    return response.status(409).json({ error: error.message })
   }
 
-  next(error);
-};
+  next(error)
+}
 
-app.use(errorHandler);
+app.use(errorHandler)
 
-const PORT = process.env.PORT;
+const PORT = process.env.PORT
 app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
+  console.log(`Server listening on port ${PORT}`)
+})
 
-/* 
+/*
 
 let persons = [
   {
@@ -148,5 +150,5 @@ const requestLogger = (request, response, next) => {
   console.log("---");
   next();
 };
-app.use(requestLogger); 
+app.use(requestLogger);
 */
